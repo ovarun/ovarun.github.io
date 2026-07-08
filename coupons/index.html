@@ -189,6 +189,7 @@
 					<button class="secondary" id="printPdf">Print / Save as PDF</button>
 					<button class="secondary" style="display: none;" id="downloadSvg">Download Current SVG</button>
 					<button class="secondary" id="downloadPng">Download Current PNG</button>
+					<button class="secondary" id="downloadAllPng">Download All PNGs</button>
 				</div>
 				<div class="status" id="status">Ready.</div>
 			</div>
@@ -7058,6 +7059,62 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 		};
 		generate();
 	</script>
+	<!-- GENERATE PNG ZIP -->
+	<script>
+	document.getElementById("downloadAllPng").addEventListener("click", downloadAllPNGs);
+
+	async function downloadAllPNGs() {
+
+		if (!generated.length) generate();
+	
+		if (!generated.length) return;
+	
+		const zip = new JSZip();
+	
+		status.textContent = "Generating PNGs...";
+	
+		for (let i = 0; i < generated.length; i++) {
+	
+			const svg = generated[i];
+	
+			const size = svgSize(svg);
+	
+			const svgString = serialize(svg);
+	
+			const url = URL.createObjectURL(
+				new Blob([svgString], { type: "image/svg+xml" })
+			);
+	
+			const img = new Image();
+	
+			await new Promise(resolve => {
+				img.onload = resolve;
+				img.src = url;
+			});
+	
+			const canvas = document.createElement("canvas");
+			canvas.width = size.w;
+			canvas.height = size.h;
+	
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(img, 0, 0);
+	
+			URL.revokeObjectURL(url);
+	
+			const blob = await new Promise(resolve =>
+				canvas.toBlob(resolve, "image/png")
+			);
+	
+			zip.file(`coupon-${i + 1}.png`, blob);
+		}
+	
+		const content = await zip.generateAsync({ type: "blob" });
+	
+		download(content, "Coupons-PNG.zip");
+	
+		status.textContent = `Downloaded ${generated.length} PNGs`;
+	}
+	</script>
 	<style>
 		footer {
 			position: fixed;
@@ -7070,6 +7127,7 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 			padding: 15px 0;
 		}
 	</style>
+	<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 	<footer>Made with ❤️ By <a href="https://arunov.com/" target="_blank">OV</a></footer>
 </body>
 
