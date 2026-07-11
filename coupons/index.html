@@ -169,6 +169,63 @@
 				page-break-after: always
 			}
 		}
+
+		#loadingOverlay {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, .65);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 999999;
+		}
+
+		.loading-box {
+			width: 420px;
+			max-width: 90%;
+			background: #fff;
+			border-radius: 12px;
+			padding: 30px;
+			text-align: center;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+		}
+
+		.spinner {
+			width: 55px;
+			height: 55px;
+			margin: 0 auto 20px;
+			border: 6px solid #ddd;
+			border-top-color: #2871ff;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		.progress-container {
+			height: 10px;
+			width: 100%;
+			background: #eee;
+			border-radius: 100px;
+			overflow: hidden;
+			margin: 20px 0;
+		}
+
+		#loadingBar {
+			width: 0%;
+			height: 100%;
+			background: #2871ff;
+			transition: width .2s;
+		}
+
+		#loadingText {
+			margin-top: 10px;
+			font-weight: 600;
+		}
 	</style>
 </head>
 
@@ -194,6 +251,19 @@
 					<button class="secondary" id="downloadAllPng">Download All PNGs</button>
 					<button class="primary" id="downloadPdf">Download as PDF</button>
 					<button class="secondary" style="display: none;" id="downloadWord">Download as Word</button>
+				</div>
+				<div id="loadingOverlay">
+					<div class="loading-box">
+						<div class="spinner"></div>
+
+						<h3 id="loadingTitle">Generating PDF...</h3>
+
+						<div class="progress-container">
+							<div id="loadingBar"></div>
+						</div>
+
+						<div id="loadingText">Preparing...</div>
+					</div>
 				</div>
 				<div class="status" id="status">Ready.</div>
 				<div id="progressContainer" style="display:none;margin-top:10px;">
@@ -7445,6 +7515,37 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 	</template>
 
 	<script>
+		const overlay = document.getElementById("loadingOverlay");
+		const loadingTitle = document.getElementById("loadingTitle");
+		const loadingBar = document.getElementById("loadingBar");
+		const loadingText = document.getElementById("loadingText");
+
+		function showLoading(title) {
+
+			loadingTitle.textContent = title;
+			loadingBar.style.width = "0%";
+			loadingText.textContent = "Preparing...";
+			overlay.style.display = "flex";
+
+		}
+
+		function updateLoading(current, total, message = "Generating") {
+
+			const percent = Math.round(current / total * 100);
+
+			loadingBar.style.width = percent + "%";
+
+			loadingText.textContent =
+				`${message} ${current} / ${total} (${percent}%)`;
+
+		}
+
+		function hideLoading() {
+
+			overlay.style.display = "none";
+
+		}
+
 		const template = document.getElementById('couponTemplate').content.querySelector('svg');
 		const preview = document.getElementById('preview');
 		let generated = [], currentIndex = 0;
@@ -7590,9 +7691,9 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 			const { jsPDF } = window.jspdf;
 
 			let pdf;
-
+			showLoading("Generating PDF");
 			for (let i = 0; i < generated.length; i++) {
-
+				updateLoading(i + 1, generated.length);
 				const svg = generated[i];
 				const size = svgSize(svg);
 
@@ -7636,10 +7737,12 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 				status.textContent =
 					`Creating PDF ${i + 1}/${generated.length}`;
 			}
-
+			loadingText.textContent = "Finalizing PDF...";
+			loadingBar.style.width = "100%";
 			pdf.save("Coupons.pdf");
 
 			status.textContent = "PDF downloaded.";
+			hideLoading();
 		};
 		// doc
 		document.getElementById("downloadWord").onclick = async function () {
