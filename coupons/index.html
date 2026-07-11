@@ -7716,11 +7716,21 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 				canvas.width = size.w;
 				canvas.height = size.h;
 
-				canvas.getContext("2d").drawImage(img, 0, 0);
+				//canvas.getContext("2d").drawImage(img, 0, 0);
+				const ctx = canvas.getContext("2d");
 
-				URL.revokeObjectURL(url);
+				// Fill white background (required for JPEG)
+				ctx.fillStyle = "#ffffff";
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				// Draw SVG on top
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-				const png = canvas.toDataURL("image/png");
+				// Export as JPEG (quality 0.8)
+				const jpg = canvas.toDataURL("image/jpeg", 0.8);
+
+				// URL.revokeObjectURL(url);
+
+				// const imageCanvas = canvas.toDataURL("image/jpeg", 0.8);
 
 				if (!pdf) {
 					pdf = new jsPDF({
@@ -7732,10 +7742,25 @@ pfWWiQg282K8RTjVmr5HjkOXrLWz1U9Qc5nl57axIQCEIQC2FHiC90OfiWumjz2ZaxI2dp2a16EG
 					pdf.addPage([size.w, size.h], size.w > size.h ? "landscape" : "portrait");
 				}
 
-				pdf.addImage(png, "PNG", 0, 0, size.w, size.h);
+				// pdf.addImage(imageCanvas, "JPEG", 0, 0, size.w, size.h);
+
+				pdf.addImage(
+					jpg,
+					"JPEG",
+					0,
+					0,
+					size.w,
+					size.h,
+					undefined,
+					"FAST"
+				);
 
 				status.textContent =
 					`Creating PDF ${i + 1}/${generated.length}`;
+
+				if ((i + 1) % 10 === 0) {
+					await new Promise(resolve => setTimeout(resolve, 0));
+				}
 			}
 			loadingText.textContent = "Finalizing PDF...";
 			loadingBar.style.width = "100%";
